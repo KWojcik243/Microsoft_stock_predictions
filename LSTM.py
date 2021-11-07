@@ -86,7 +86,7 @@ model = lstm2(n_steps, n_features)
 history = model.fit(train_gen, epochs=10, validation_data=valid_gen, callbacks=[early_stopping])
 scores = model.evaluate(test_gen)
 
-# Forecast
+# Predict for test
 
 temp_data = copy.deepcopy(xvalid)
 temp_data = temp_data.to_numpy()

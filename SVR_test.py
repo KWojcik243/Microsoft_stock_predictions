@@ -26,14 +26,15 @@ df = df.drop('Open', 1)
 df = df.drop('High', 1)
 df = df.drop('Low', 1)
 df = df.drop('Volume', 1)
-df.Date = pd.to_datetime(df.Date)
 df = df.drop('Date', 1)
 
 scaler = MinMaxScaler()
 
 for i in range(len(df)):
     df.Close[i] = df.Close[i].replace('$', '')
+
 df.loc[:, ['Close']] = df.loc[:, ['Close']].astype(float)
+
 df['Close'] = scaler.fit_transform(df['Close'].values.reshape(-1, 1))
 x = df.loc[:, ['Close']]
 
