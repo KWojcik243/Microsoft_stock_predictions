@@ -20,7 +20,6 @@ df = df.rename(columns={'Close/Last': 'Close', 'Volume': 'Employees'})
 df = df.drop('Open', 1)
 df = df.drop('High', 1)
 df = df.drop('Low', 1)
-df.Date = pd.to_datetime(df.Date)
 df = df.drop('Date', 1)
 
 # Create fictional data
@@ -51,10 +50,9 @@ df.loc[:, ['Close', 'Employees']] = df.loc[:, ['Close', 'Employees']].astype(flo
 for i in range(len(df)):
     df.Employees[i] = trend_numb[len(df) - i]
 
-# print(df.Close)
-
 decompose = seasonal_decompose(df.Close, model='additive', period=1)
 decompose.plot()
+
 # Prepare input
 original_close = copy.deepcopy(df['Close']).values
 df['Close'] = scaler.fit_transform(df['Close'].values.reshape(-1, 1))
@@ -74,7 +72,7 @@ valid_gen = TimeseriesGenerator(xvalid.to_numpy(), xvalid['Close'].values,
                                 length=n_steps, batch_size=1, sampling_rate=1)
 
 
-def lstm2(n_steps, n_features):
+def lstm(n_steps, n_features):
     model = Sequential()
     model.add(LSTM(32, activation='linear', return_sequences=True, input_shape=(n_steps, n_features)))
     model.add(LSTM(16, activation='linear', input_shape=(n_steps, n_features)))
@@ -85,7 +83,7 @@ def lstm2(n_steps, n_features):
 
 
 early_stopping = EarlyStopping(monitor='loss',patience=5)
-model = lstm2(n_steps, n_features)
+model = lstm(n_steps, n_features)
 history = model.fit(train_gen, epochs=10, validation_data=valid_gen, callbacks=[early_stopping])
 scores = model.evaluate(test_gen)
 

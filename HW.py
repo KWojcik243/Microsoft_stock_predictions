@@ -14,7 +14,6 @@ df = df.drop('Open', 1)
 df = df.drop('High', 1)
 df = df.drop('Low', 1)
 df = df.drop('Volume', 1)
-df.Date = pd.to_datetime(df.Date)
 df = df.drop('Date', 1)
 
 scaler_trend_numb = MinMaxScaler()
