@@ -10,6 +10,7 @@ from keras.models import Sequential
 from keras.layers import Dense, LSTM
 from keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
+from tqdm import tqdm
 
 # Create dataframe
 
@@ -55,6 +56,7 @@ for i in range(len(df)):
 decompose = seasonal_decompose(df.Close, model='additive', period=1)
 decompose.plot()
 # Prepare input
+original_close = copy.deepcopy(df['Close']).values
 df['Close'] = scaler.fit_transform(df['Close'].values.reshape(-1, 1))
 x = df.loc[:, ['Close', 'Employees']]
 
@@ -74,7 +76,8 @@ valid_gen = TimeseriesGenerator(xvalid.to_numpy(), xvalid['Close'].values,
 
 def lstm2(n_steps, n_features):
     model = Sequential()
-    model.add(LSTM(4, activation='tanh', return_sequences=False, input_shape=(n_steps, n_features)))
+    model.add(LSTM(32, activation='linear', return_sequences=True, input_shape=(n_steps, n_features)))
+    model.add(LSTM(16, activation='linear', input_shape=(n_steps, n_features)))
     model.add(Dense(1, activation='linear'))
     optimizer = Adam(learning_rate=0.001)
     model.compile(optimizer=optimizer, loss='mse', metrics=['mse'])
@@ -92,12 +95,10 @@ temp_data = copy.deepcopy(xvalid)
 temp_data = temp_data.to_numpy()
 preds = []
 
-for i in range(xtest.shape[0]):
+for i in tqdm(range(xtest.shape[0])):
     batch = temp_data[-n_steps:]
     batch = batch.reshape(1, n_steps, n_features)
     single_prediction = model.predict(batch)
-    print(batch)
-    print('===')
     next_batch_sample = [[single_prediction[0][0], trend_numb[len(xtrain) + i + len(xvalid)][0]]]
     temp_data = np.append(temp_data, next_batch_sample, axis=0)
     preds.append(single_prediction[0])
@@ -108,9 +109,34 @@ true = scaler.inverse_transform(copy.deepcopy(xtest).to_numpy())
 y_pred = preds[:, 0]
 y_true = true[:, 0]
 
-plt.figure(figsize=(21, 9))
-plt.plot(y_pred, label='Predicted Close')
-plt.plot(y_true, label='True Close')
-plt.legend()
-plt.title("Microsoft stock prediction")
+plt.figure(figsize=(20, 10))
+plt.title("LSTM predictions for test set", fontsize=26)
+plt.plot([x for x in range(len(xtrain) + len(xvalid), len(xtrain) + len(xvalid) + len(xtest))], y_pred, label='LSTM')
+plt.plot(original_close, label='Real')
+plt.legend(loc='best', prop={'size': 36})
+plt.show()
+
+
+# Forecast
+forecast_size = 200
+temp_data = copy.deepcopy(xtest)
+temp_data = temp_data.to_numpy()
+preds2 = []
+
+for i in tqdm(range(forecast_size)):
+    batch = temp_data[-n_steps:]
+    batch = batch.reshape(1, n_steps, n_features)
+    single_prediction = model.predict(batch)
+    next_batch_sample = [[single_prediction[0][0], trend_numb[len(xtrain) + i + len(xvalid) + len(xtest)][0]]]
+    temp_data = np.append(temp_data, next_batch_sample, axis=0)
+    preds2.append(single_prediction[0])
+
+preds2 = scaler.inverse_transform(np.array(preds2))
+y_pred = preds2[:, 0]
+
+plt.figure(figsize=(20, 10))
+plt.title("LSTM forecast", fontsize=26)
+plt.plot([x for x in range(len(df), len(df) + forecast_size)], y_pred, label='Forecast')
+plt.plot(original_close, label='Real')
+plt.legend(loc='best', prop={'size':36})
 plt.show()
